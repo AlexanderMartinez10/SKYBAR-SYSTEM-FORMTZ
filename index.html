@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sky bar . sistema pos</title>
+    <!-- Favicon (Transparent SVG) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23d4af37' d='M503 16c-13.6-14-35.8-16.7-52.6-6.6l-194.4 116.6L61.6 9.4C44.8-.7 22.6 2 9 16l-.1 .1C-4.4 30.1-3.2 53.1 11.6 66l193.3 162.7L204.9 416H112c-17.7 0-32 14.3-32 32s14.3 32 32 32H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H307.1L307.1 228.7 500.4 66C515.2 53.1 516.4 30.1 503.1 16.1l-.1-.1z'/%3E%3C/svg%3E" type="image/svg+xml">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="screen active">
+        <div class="login-card">
+            <div class="logo">
+                <i class="fa-solid fa-martini-glass-citrus"></i>
+                <h1>SKY BAR</h1>
+            </div>
+            <p class="subtitle">Sistema de Control Total</p>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="username"><i class="fa-solid fa-user"></i> Usuario</label>
+                    <input type="text" id="username" required placeholder="admin o cajero">
+                </div>
+                <div class="input-group">
+                    <label for="password"><i class="fa-solid fa-lock"></i> Contraseña</label>
+                    <input type="password" id="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary btn-large">Ingresar <i class="fa-solid fa-arrow-right"></i></button>
+            </form>
+            <p class="demo-hints">
+                <small>Demo: admin / admin (Admin) | cajero / cajero (Cajero)</small>
+            </p>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN -->
+    <div id="app-screen" class="screen">
+        
+        <!-- SIDEBAR -->
+        <nav class="sidebar">
+            <div class="logo-small">
+                <i class="fa-solid fa-martini-glass-citrus"></i>
+                <span>SKY BAR</span>
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="#" data-view="dashboard" class="active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+                <li><a href="#" data-view="pos"><i class="fa-solid fa-cash-register"></i> Caja / POS</a></li>
+                <li><a href="#" data-view="inventory"><i class="fa-solid fa-boxes-stacked"></i> Inventario</a></li>
+                <li class="admin-only"><a href="#" data-view="reports"><i class="fa-solid fa-file-invoice-dollar"></i> Reportes</a></li>
+                <li class="admin-only"><a href="#" data-view="settings"><i class="fa-solid fa-gear"></i> Ajustes</a></li>
+            </ul>
+
+            <div class="user-info">
+                <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
+                <div class="details">
+                    <span id="current-user-name">Usuario</span>
+                    <span id="current-role" class="badge">Rol</span>
+                </div>
+                <button id="btn-logout" class="btn-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            
+            <!-- HEADER -->
+            <header class="top-header">
+                <div></div> <!-- Placeholder for future breadcrumbs or title -->
+                <div class="header-actions">
+                    <div class="time-display" id="clock">00:00:00</div>
+                    <button id="btn-alerts" class="btn-icon"><i class="fa-solid fa-bell"></i><span class="alert-badge hidden" id="alert-badge">0</span></button>
+                </div>
+            </header>
+
+            <div class="views-container">
+                
+                <!-- DASHBOARD VIEW -->
+                <div id="view-dashboard" class="view active">
+                    <h2 class="view-title">Resumen de Hoy</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon purple"><i class="fa-solid fa-money-bill-wave"></i></div>
+                            <div class="stat-info">
+                                <h3>Ventas del Día</h3>
+                                <p id="dash-sales">$0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon gold"><i class="fa-solid fa-receipt"></i></div>
+                            <div class="stat-info">
+                                <h3>Órdenes</h3>
+                                <p id="dash-orders">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="stat-info">
+                                <h3>Alertas Stock</h3>
+                                <p id="dash-alerts">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- POS VIEW -->
+                <div id="view-pos" class="view pos-layout">
+                    <!-- Left: Menu & Table Info -->
+                    <div class="pos-main">
+                        <div class="pos-header">
+                            <div class="order-details">
+                                <div class="input-group">
+                                    <label>Mesa N°</label>
+                                    <input type="number" id="pos-table" min="1" placeholder="Ej: 12">
+                                </div>
+                                <div class="input-group">
+                                    <label>Mozo</label>
+                                    <input type="text" id="pos-waiter" placeholder="Ej: Carlos">
+                                </div>
+                            </div>
+                            <div class="search-bar">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="pos-search" placeholder="Buscar productos...">
+                            </div>
+                            <div class="pos-categories" id="pos-cats">
+                                <button class="cat-btn active" data-cat="all">Todos</button>
+                                <button class="cat-btn" data-cat="drinks">Tragos</button>
+                                <button class="cat-btn" data-cat="beverages">Bebidas</button>
+                                <button class="cat-btn" data-cat="food">Comida</button>
+                            </div>
+                        </div>
+
+                        <div class="products-grid" id="pos-products">
+                            <!-- JS populates this -->
+                        </div>
+
+                        <!-- Manual Item -->
+                        <div class="manual-item-box">
+                            <h3><i class="fa-solid fa-keyboard"></i> Producto Manual</h3>
+                            <div class="manual-inputs">
+                                <input type="text" id="manual-name" placeholder="Descripción especial">
+                                <input type="number" id="manual-price" placeholder="Precio $" min="0" step="0.01">
+                                <button id="btn-add-manual" class="btn btn-secondary">Agregar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Cart / Ticket -->
+                    <div class="pos-sidebar">
+                        <div class="ticket-header">
+                            <h3>Ticket Actual</h3>
+                            <span class="date" id="pos-date">--/--/----</span>
+                        </div>
+                        
+                        <div class="cart-items" id="cart-items">
+                            <!-- JS populates this -->
+                            <div class="empty-cart">
+                                <i class="fa-solid fa-cart-arrow-down"></i>
+                                <p>El pedido está vacío</p>
+                            </div>
+                        </div>
+
+                        <div class="cart-summary">
+                            <div class="summary-line total">
+                                <span>Total</span>
+                                <span id="cart-total">$0.00</span>
+                            </div>
+                            <button id="btn-checkout" class="btn btn-primary btn-large btn-block" disabled>Cobrar y Cerrar Mesa</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INVENTORY VIEW -->
+                <div id="view-inventory" class="view">
+                    <div class="view-header">
+                        <h2 class="view-title">Gestión de Inventario</h2>
+                        <button class="btn btn-primary" id="btn-new-item"><i class="fa-solid fa-plus"></i> Nuevo Artículo</button>
+                    </div>
+
+                    <div class="tabs">
+                        <button class="tab-btn active" data-target="inv-sala">Stock Sala</button>
+                        <button class="tab-btn" data-target="inv-cocina">Stock Cocina</button>
+                        <button class="tab-btn" data-target="inv-barra">Stock Barra</button>
+                        <button class="tab-btn" data-target="inv-general">General Cocina</button>
+                    </div>
+
+                    <div class="tab-content">
+                        <!-- Table populated by JS based on active tab -->
+                        <div class="table-container">
+                            <table class="data-table" id="inventory-table">
+                                <thead>
+                                    <tr>
+                                        <th>Artículo</th>
+                                        <th>Categoría</th>
+                                        <th>Cantidad</th>
+                                        <th>Mínimo</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- JS populates this -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REPORTS VIEW -->
+                <div id="view-reports" class="view">
+                    <div class="view-header">
+                        <h2 class="view-title">Reportes y Cierre</h2>
+                        <button class="btn btn-secondary" id="btn-export-csv"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button>
+                    </div>
+
+                    <div class="reports-grid">
+                        <div class="card">
+                            <h3>Cierre Diario</h3>
+                            <p class="big-number" id="rep-daily">$0</p>
+                            <button class="btn btn-primary" id="btn-close-day">Generar Cierre del Día</button>
+                        </div>
+                        <div class="card">
+                            <h3>Ventas Mensuales</h3>
+                            <p class="big-number" id="rep-monthly">$0</p>
+                        </div>
+                        <div class="card">
+                            <h3>Ventas Anuales</h3>
+                            <p class="big-number" id="rep-yearly">$0</p>
+                        </div>
+                    </div>
+
+                    <div class="history-section mt-4">
+                        <h3>Historial de Ventas</h3>
+                        <div class="table-container">
+                            <table class="data-table" id="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha/Hora</th>
+                                        <th>Mesa</th>
+                                        <th>Mozo</th>
+                                        <th>Total</th>
+                                        <th>Ticket</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- JS populates this -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS VIEW -->
+                <div id="view-settings" class="view">
+                    <div class="view-header">
+                        <h2 class="view-title">Ajustes del Sistema</h2>
+                    </div>
+
+                    <!-- Menu management -->
+                    <div class="card" style="margin-bottom: 20px;">
+                        <h3>Gestión de Productos (Menú POS)</h3>
+                        <p style="color:var(--text-muted); margin-bottom: 15px;">Añade platos o bebidas para acelerar la toma de pedidos en caja.</p>
+                        
+                        <div style="display:flex; gap:10px; margin-bottom: 20px; align-items: flex-end; flex-wrap:wrap;">
+                            <div class="input-group" style="flex:2; margin-bottom:0;">
+                                <label>Nombre del Producto</label>
+                                <input type="text" id="set-prod-name" placeholder="Ej: Pizza Muzzarella">
+                            </div>
+                            <div class="input-group" style="flex:1; margin-bottom:0;">
+                                <label>Precio ($)</label>
+                                <input type="number" id="set-prod-price" placeholder="0.00" min="0" step="0.01">
+                            </div>
+                            <div class="input-group" style="flex:1; margin-bottom:0;">
+                                <label>Categoría</label>
+                                <select id="set-prod-cat">
+                                    <option value="drinks">Tragos</option>
+                                    <option value="beverages">Bebidas</option>
+                                    <option value="food">Comida</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" id="btn-add-product" style="height:44px;"><i class="fa-solid fa-plus"></i> Añadir</button>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="data-table" id="settings-products-table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Categoría</th>
+                                        <th>Precio</th>
+                                        <th>Borrar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card danger-zone">
+                        <h3>Zona Peligrosa</h3>
+                        <p>Estas acciones no se pueden deshacer.</p>
+                        <button class="btn btn-danger" id="btn-reset-data"><i class="fa-solid fa-trash-can"></i> Borrar Todo y Resetear</button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Modal: Checkout / Receipt -->
+    <div class="modal-overlay" id="modal-checkout">
+        <div class="modal receipt-modal">
+            <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            <div class="receipt-content" id="receipt-content">
+                <!-- Receipt details generated by JS -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btn-print-receipt"><i class="fa-solid fa-print"></i> Imprimir</button>
+                <button class="btn btn-primary" id="btn-confirm-checkout"><i class="fa-solid fa-check"></i> Finalizar Venta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- WATERMARK -->
+    <div class="watermark">MTZ Programador web Contacto:ale.mcap1234@gmail.com</div>
+
+    <script src="js/store.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/pos.js"></script>
+    <script src="js/inventory.js"></script>
+    <script src="js/reports.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>
