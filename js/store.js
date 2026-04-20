@@ -9,7 +9,8 @@ const Store = {
         PRODUCTS: 'skybar_products', // POS Menu items
         INVENTORY: 'skybar_inventory', // Stock items
         HISTORY: 'skybar_history', // Completed orders
-        SETTINGS: 'skybar_settings'
+        SETTINGS: 'skybar_settings',
+        ACTIVE: 'skybar_active_orders'
     },
 
     // Initialize store with default data if empty
@@ -95,6 +96,23 @@ const Store = {
             date: new Date().toISOString()
         });
         this.save(this.keys.HISTORY, history);
+    },
+
+    // --- Active Orders (Tables) ---
+    getActiveOrders() {
+        return this.get(this.keys.ACTIVE) || {};
+    },
+
+    saveActiveOrder(tableNum, orderData) {
+        const active = this.getActiveOrders();
+        active[tableNum] = orderData;
+        this.save(this.keys.ACTIVE, active);
+    },
+
+    removeActiveOrder(tableNum) {
+        const active = this.getActiveOrders();
+        delete active[tableNum];
+        this.save(this.keys.ACTIVE, active);
     }
 };
 

@@ -114,6 +114,14 @@
                 <div id="view-pos" class="view pos-layout">
                     <!-- Left: Menu & Table Info -->
                     <div class="pos-main">
+                        <!-- Table Map -->
+                        <div class="table-map-container">
+                            <h3><i class="fa-solid fa-table-cells"></i> Mapa de Mesas</h3>
+                            <div class="table-grid" id="pos-table-map">
+                                <!-- JS will populate 20 tables -->
+                            </div>
+                        </div>
+
                         <div class="pos-header">
                             <div class="order-details">
                                 <div class="input-group">
@@ -172,7 +180,14 @@
                                 <span>Total</span>
                                 <span id="cart-total">$0.00</span>
                             </div>
-                            <button id="btn-checkout" class="btn btn-primary btn-large btn-block" disabled>Cobrar y Cerrar Mesa</button>
+                            <div class="cart-actions">
+                                <button id="btn-save-table" class="btn btn-secondary btn-block">
+                                    <i class="fa-solid fa-floppy-disk"></i> Guardar Mesa
+                                </button>
+                                <button id="btn-checkout" class="btn btn-primary btn-large btn-block" disabled>
+                                    <i class="fa-solid fa-cash-register"></i> Cobrar / Cerrar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -10,6 +10,7 @@ window.POS = {
     init() {
         this.cacheDOM();
         this.bindEvents();
+        this.renderTableMap();
         this.renderMenu();
         this.updateDate();
     },
@@ -35,6 +36,8 @@ window.POS = {
         this.modalCheckout = document.getElementById('modal-checkout');
         this.btnConfirmCheckout = document.getElementById('btn-confirm-checkout');
         this.btnPrintReceipt = document.getElementById('btn-print-receipt');
+        this.btnSaveTable = document.getElementById('btn-save-table');
+        this.posTableMap = document.getElementById('pos-table-map');
         this.closeModalBtn = this.modalCheckout.querySelector('.close-modal');
         this.receiptContent = document.getElementById('receipt-content');
     },
@@ -67,6 +70,11 @@ window.POS = {
             }
         });
 
+        // Manual selection of table number should highlight map
+        this.tableInput.addEventListener('input', () => {
+            this.handleTableChange();
+        });
+
         // Checkout Button
         this.btnCheckout.addEventListener('click', () => {
             if (this.cart.length === 0) return;
@@ -81,6 +89,11 @@ window.POS = {
                 return;
             }
             this.showCheckoutModal();
+        });
+
+        // Save Table button
+        this.btnSaveTable.addEventListener('click', () => {
+            this.saveOrderToTable();
         });
 
         // Modals
@@ -102,6 +115,73 @@ window.POS = {
         if (dateEl) {
             dateEl.textContent = new Date().toLocaleDateString('es-ES');
         }
+    },
+
+    renderTableMap() {
+        const activeOrders = Store.getActiveOrders();
+        this.posTableMap.innerHTML = '';
+        
+        for (let i = 1; i <= 20; i++) {
+            const tableData = activeOrders[i];
+            const div = document.createElement('div');
+            div.className = `table-item ${tableData ? 'table-occupied' : 'table-free'}`;
+            if (this.tableInput.value == i) div.classList.add('active');
+            
+            div.innerHTML = `
+                <span>${i}</span>
+                ${tableData ? `<span class="table-total">$${tableData.total.toFixed(0)}</span>` : ''}
+            `;
+            
+            div.onclick = () => {
+                this.tableInput.value = i;
+                this.handleTableChange();
+            };
+            this.posTableMap.appendChild(div);
+        }
+    },
+
+    handleTableChange() {
+        const tableNum = this.tableInput.value;
+        const activeOrders = Store.getActiveOrders();
+        const existingOrder = activeOrders[tableNum];
+
+        if (existingOrder) {
+            this.cart = existingOrder.items.map(item => ({ ...item, status: 'saved' }));
+            this.waiterInput.value = existingOrder.waiter || '';
+        } else {
+            // If it's a new table and we were on an active one, clear cart? 
+            // Better to only clear if we are moving to a free table
+            this.cart = [];
+        }
+        
+        this.renderTableMap();
+        this.renderCart();
+    },
+
+    saveOrderToTable() {
+        const tableNum = this.tableInput.value;
+        if (!tableNum) {
+            App.showToast('Ingrese número de mesa', 'error');
+            return;
+        }
+
+        const total = this.cart.reduce((s, i) => s + (i.price * i.qty), 0);
+        const orderData = {
+            table: tableNum,
+            waiter: this.waiterInput.value,
+            items: this.cart.map(i => ({ ...i, status: 'saved' })),
+            total: total
+        };
+
+        Store.saveActiveOrder(tableNum, orderData);
+        App.showToast(`Mesa ${tableNum} guardada`, 'success');
+        
+        // Reset POS
+        this.cart = [];
+        this.tableInput.value = '';
+        this.waiterInput.value = '';
+        this.renderTableMap();
+        this.renderCart();
     },
 
     renderMenu() {
@@ -134,21 +214,21 @@ window.POS = {
     },
 
     addToCart(product) {
-        const existing = this.cart.find(i => i.id === product.id);
+        const existing = this.cart.find(i => i.id === product.id && i.status !== 'saved');
         if (existing) {
             existing.qty++;
         } else {
-            this.cart.push({ ...product, qty: 1 });
+            this.cart.push({ ...product, qty: 1, status: 'new' });
         }
         this.renderCart();
     },
 
-    updateQty(id, delta) {
-        const item = this.cart.find(i => i.id === id);
+    updateQty(id, delta, status) {
+        const item = this.cart.find(i => i.id === id && i.status === status);
         if (item) {
             item.qty += delta;
             if (item.qty <= 0) {
-                this.cart = this.cart.filter(i => i.id !== id);
+                this.cart = this.cart.filter(i => !(i.id === id && i.status === status));
             }
         }
         this.renderCart();
@@ -166,6 +246,7 @@ window.POS = {
             `;
             this.cartTotalEl.textContent = '$0.00';
             this.btnCheckout.disabled = true;
+            this.btnSaveTable.disabled = true;
             return;
         }
 
@@ -179,13 +260,13 @@ window.POS = {
             div.className = 'cart-item';
             div.innerHTML = `
                 <div class="cart-item-info">
-                    <h4>${item.name}</h4>
+                    <h4>${item.name} ${item.status === 'saved' ? '<small>Enviado</small>' : ''}</h4>
                     <span class="cart-item-price">$${itemTotal.toFixed(2)}</span>
                 </div>
                 <div class="cart-item-qty">
-                    <button onclick="window.POS.updateQty('${item.id}', -1)"><i class="fa-solid fa-minus"></i></button>
+                    <button onclick="window.POS.updateQty('${item.id}', -1, '${item.status}')"><i class="fa-solid fa-minus"></i></button>
                     <span>${item.qty}</span>
-                    <button onclick="window.POS.updateQty('${item.id}', 1)"><i class="fa-solid fa-plus"></i></button>
+                    <button onclick="window.POS.updateQty('${item.id}', 1, '${item.status}')"><i class="fa-solid fa-plus"></i></button>
                 </div>
             `;
             this.cartItemsContainer.appendChild(div);
@@ -193,6 +274,7 @@ window.POS = {
 
         this.cartTotalEl.textContent = `$${total.toFixed(2)}`;
         this.btnCheckout.disabled = false;
+        this.btnSaveTable.disabled = false;
     },
 
     showCheckoutModal() {
@@ -204,14 +286,17 @@ window.POS = {
             <p>Fecha: ${orderDate}</p>
             <p>Mesa: ${this.tableInput.value}</p>
             <p>Mozo: ${this.waiterInput.value}</p>
-            <p>Cajero: ${Auth.getUserName()}</p>
             <hr>
-            <table style="width:100%; text-align:left;">
-                <tr><th>Cant</th><th>Descripción</th><th style="text-align:right;">Sub</th></tr>
+            <table class="receipt-table" style="width:100%; text-align:left;">
+                <tr>
+                    <th><input type="checkbox" id="select-all-split" checked onchange="window.POS.toggleAllSplit(this.checked)"></th>
+                    <th>Cant</th><th>Descripción</th><th style="text-align:right;">Sub</th>
+                </tr>
         `;
         
-        this.cart.forEach(item => {
+        this.cart.forEach((item, index) => {
             html += `<tr>
+                <td><input type="checkbox" class="split-checkbox" data-index="${index}" checked onchange="window.POS.updateSplitTotal()"></td>
                 <td>${item.qty}x</td>
                 <td>${item.name}</td>
                 <td style="text-align:right;">$${(item.price * item.qty).toFixed(2)}</td>
@@ -221,11 +306,29 @@ window.POS = {
         html += `
             </table>
             <hr>
-            <h3 style="text-align:right;">TOTAL: $${total.toFixed(2)}</h3>
+            <h3 style="text-align:right;" id="split-total-display">TOTAL A COBRAR: $${total.toFixed(2)}</h3>
         `;
         
         this.receiptContent.innerHTML = html;
         this.modalCheckout.classList.add('active');
+    },
+
+    toggleAllSplit(checked) {
+        document.querySelectorAll('.split-checkbox').forEach(cb => cb.checked = checked);
+        this.updateSplitTotal();
+    },
+
+    updateSplitTotal() {
+        let total = 0;
+        const checkboxes = document.querySelectorAll('.split-checkbox');
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                const idx = cb.getAttribute('data-index');
+                const item = this.cart[idx];
+                total += item.price * item.qty;
+            }
+        });
+        document.getElementById('split-total-display').textContent = `TOTAL A COBRAR: $${total.toFixed(2)}`;
     },
 
     printReceipt() {
@@ -243,28 +346,61 @@ window.POS = {
     },
 
     finalizeOrder() {
-        const total = this.cart.reduce((s, i) => s + (i.price * i.qty), 0);
-        
+        const checkboxes = document.querySelectorAll('.split-checkbox');
+        const selectedItems = [];
+        const remainingItems = [];
+        let totalPaid = 0;
+
+        checkboxes.forEach(cb => {
+            const idx = cb.getAttribute('data-index');
+            const item = this.cart[idx];
+            if (cb.checked) {
+                selectedItems.push(item);
+                totalPaid += item.price * item.qty;
+            } else {
+                remainingItems.push(item);
+            }
+        });
+
+        if (selectedItems.length === 0) {
+            App.showToast('Seleccione al menos un producto', 'error');
+            return;
+        }
+
+        const tableNum = this.tableInput.value;
         const order = {
-            table: this.tableInput.value,
+            table: tableNum,
             waiter: this.waiterInput.value,
-            items: [...this.cart],
-            total: total,
+            items: selectedItems,
+            total: totalPaid,
             cashier: Auth.getUserName()
         };
         
         Store.addOrderToHistory(order);
+        
+        // Update active table
+        if (remainingItems.length > 0) {
+            const newTotal = remainingItems.reduce((s, i) => s + (i.price * i.qty), 0);
+            Store.saveActiveOrder(tableNum, {
+                table: tableNum,
+                waiter: this.waiterInput.value,
+                items: remainingItems.map(i => ({ ...i, status: 'saved' })),
+                total: newTotal
+            });
+            App.showToast('Cobro parcial realizado', 'success');
+        } else {
+            Store.removeActiveOrder(tableNum);
+            App.showToast('Venta finalizada y mesa cerrada', 'success');
+        }
         
         // Reset Cart and Inputs
         this.cart = [];
         this.renderCart();
         this.tableInput.value = '';
         this.waiterInput.value = '';
+        this.renderTableMap();
         
         this.modalCheckout.classList.remove('active');
-        App.showToast('Venta finalizada con éxito', 'success');
-        
-        // Update dashboard quietly
         App.updateDashboard();
     }
 };
