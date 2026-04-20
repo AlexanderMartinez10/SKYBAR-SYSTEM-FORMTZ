@@ -224,11 +224,12 @@ window.POS = {
     },
 
     updateQty(id, delta, status) {
-        const item = this.cart.find(i => i.id === id && i.status === status);
+        // Use == for ID comparison because the ID might be a number in the store but a string from the HTML attribute
+        const item = this.cart.find(i => i.id == id && i.status === status);
         if (item) {
             item.qty += delta;
             if (item.qty <= 0) {
-                this.cart = this.cart.filter(i => !(i.id === id && i.status === status));
+                this.cart = this.cart.filter(i => !(i.id == id && i.status === status));
             }
         }
         this.renderCart();
